@@ -44,7 +44,7 @@ def get_algo_positions(G):
     # pos=nx.kamada_kawai_layout(G) # IS KAWAII
     # pos = nx.shell_layout(G) # IS A CIRCLE
     # pos = nx.spring_layout(G, k=0.3, seed=2)  # THIS ONE LOOKS PROMISING
-    pos = nx.spring_layout(G, k=0.07)  # THIS ONE LOOKS PROMISING
+    pos = nx.spring_layout(G, k=0.07, seed=2)  # THIS ONE LOOKS PROMISING
     # pos = nx.spring_layout(G, 3) # THIS ONE LOOKS PROMISING
     # pos = nx.spectral_layout(G) # LOL WAT IS DIS
     df_pos = pd.DataFrame(pos, index=['x', 'y']).T.reset_index()
