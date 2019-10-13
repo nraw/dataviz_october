@@ -123,3 +123,4 @@ def save_data_details(data_details):
 
 def load_data_details():
     data_details = json.load(open('data/data_details.json', 'r'))
+    return data_details

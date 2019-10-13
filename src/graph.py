@@ -142,7 +142,8 @@ def mark_average_scores(G, field):
 
 
 def get_average_score(movies, G, field):
-    imdb_score = np.mean([G.nodes[node][field] for node in movies if field in G.nodes[node].keys()])
+    imdb_score = np.nanmean([G.nodes[node][field] for node in movies if field in G.nodes[node].keys()])
+    imdb_score = np.round(imdb_score, 2)
     return imdb_score
 
 

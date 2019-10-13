@@ -13,6 +13,7 @@ from dash.dependencies import Input, Output, State
 from flask_caching import Cache
 from src.graph import get_graph
 from src.visualize_graph import plot_G
+from src.markdown_info import get_markdown_info
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', "https://codepen.io/chriddyp/pen/brPBPO.css"]  # dash and loading spinner css
 
@@ -35,38 +36,101 @@ cache = Cache(app.server, config={
 })
 
 G = get_graph()
+fields = ['imdb', 'tomato', 'Jump Scares', 'Major Jump Scares', 'Minor Jump Scares', 'Runtime', 'Scare Rating', 'is_instance']
 
 
 def serve_layout():
     session_id = str(uuid.uuid4())
     return html.Div([
+        html.Div([
         html.Div(session_id, id='session-id', style={'display': 'none'}),
         html.Div([
-            dcc.Graph(id='main-graph',style={'height':'100vh'}),
+            dcc.Graph(id='main-graph',style={'height': '98vh'}),
         ],
-            style={'display': 'block'},
+            style={'display': 'block', 'backgroundColor': 'black'},
             id='charts-div'
-        ),
-    ])
-
+        )],
+            className='nine columns',
+        style={'backgroundColor': 'black'}
+    ),
+        html.Div([
+            html.Label(['Node:',
+                dcc.Dropdown(
+                    options=[{'label': node, 'value': node} for node in G],
+                    searchable=True,
+                    id='node_input'
+                )
+            ]),
+            html.Label(['Size:',
+                dcc.Dropdown(
+                    options=[{'label': field, 'value': field} for field in fields],
+                    searchable=True,
+                    id='dim0',
+                    value='imdb'
+                )
+           ]),
+            html.Label(['Color:',
+                        dcc.Dropdown(
+                            options=[{'label': field, 'value': field} for field in fields],
+                            searchable=True,
+                            id='dim1',
+                            value='is_instance'
+                        )
+                        ]),
+            html.Label(['x:',
+                        dcc.Dropdown(
+                            options=[{'label': field, 'value': field} for field in fields],
+                            searchable=True,
+                            id='dim2',
+                        )
+                        ]),
+            html.Label(['y:',
+                        dcc.Dropdown(
+                            options=[{'label': field, 'value': field} for field in fields],
+                            searchable=True,
+                            id='dim3',
+                        )
+                        ]),
+            dcc.Markdown(id='markdown_info', style={"white-space": "pre", "overflow-x": "scroll", "overflow-y": "scroll"}),
+        ], className='three columns', style={'height': '98vh'})
+    ], className='row')
 
 app.layout = serve_layout
 
 
 @app.callback(
-    [Output('main-graph', 'figure')],
-    [Input('main-graph', 'clickData')])
-def update_graph(click_data):
-    print(click_data)
-    if click_data:
-        node = click_data['points'][0]['text']
-    else:
+    [Output('main-graph', 'figure'),
+     Output('markdown_info', 'children')],
+    [Input('main-graph', 'clickData'),
+     Input('node_input', 'value'),
+     Input('dim0', 'value'),
+     Input('dim1', 'value'),
+     Input('dim2', 'value'),
+     Input('dim3', 'value')])
+def update_graph(click_data, node_input, dim0, dim1, dim2, dim3):
+    ctx = dash.callback_context
+    if not ctx.triggered:
         node = None
-    dims = ['imdb', 'is_instance']
+    else:
+        trigger = ctx.triggered[0]['prop_id']
+        if trigger == 'node_input.value':
+            node = node_input
+        elif trigger == 'main-graph.clickData':
+            node = click_data['points'][0]['text']
+        else:
+            node = None
+
+    if node in ['tag', 'director', 'movie']:  # Plotly bug?
+        node = None
+    if dim2 is None or dim3 is None:
+        dims = [dim0, dim1]
+    else:
+        dims = [dim0, dim1, dim2, dim3]
     fig = plot_G(G, dims, node, auto_open=False)
     fig.update_layout({'uirevision': True})
-    print(fig)
-    return [fig]
+    markdown_info = get_markdown_info(G, node)
+    # print(fig)
+    return [fig, markdown_info]
 
 
 if __name__ == '__main__':
