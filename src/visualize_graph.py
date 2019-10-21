@@ -31,9 +31,16 @@ def plot_G(G, dims=None, node=None, auto_open=True):
 
 
 def get_positions(G, dims):
-    if len(dims) == 4:
+    if dims and len(dims) == 4:
         pos = [[node, data[dims[2]], data[dims[3]]] for node, data in G.nodes(data=True) if dims[2] in data.keys() and dims[3] in data.keys()]
-        df_pos = pd.DataFrame(pos, columns=['index', 'x','y'])
+        df_pos = pd.DataFrame(pos, columns=['index', 'x', 'y'])
+    elif dims and len(dims) == 3:
+        pos = [[node, G.node[node][dims[2]]] for node, neighbors in G.adj.items()]
+        df_pos = pd.DataFrame(pos).reset_index()
+        df_pos.columns = ['y', 'index','x']
+        df_pos = df_pos[['index','x','y']]
+        # pos = [[node, G.node[nodyye][dims[2]], np.std([G.node[neighbor][dims[2]] for neighbor in neighbors])] for node, neighbors in G.adj.items()]
+        # df_pos = pd.DataFrame(pos, columns=['index', 'x','y'])
     else:
         df_pos = get_algo_positions(G)
     return df_pos
@@ -65,7 +72,7 @@ def get_node_trace(G, df_pos, dims, node=None):
             opacity=0.8,
             colorscale='YlGnBu',
             reversescale=True,
-            color=[],
+            color='white',
             size=20,
             colorbar=dict(
                 thickness=15,
@@ -75,22 +82,30 @@ def get_node_trace(G, df_pos, dims, node=None):
             ),
             line=dict(width=2)))
     df_nodes = pd.DataFrame(G.nodes(data=True), columns=['n', 'data'])
-    df_nodes[dims[0]] = df_nodes['data'].apply(lambda x: x[dims[0]])
-    if np.issubdtype(df_nodes[dims[0]].dtype, np.number):  # is numeric
-        df_nodes['norm_size'] = normalize(df_nodes[dims[0]])
-        df_nodes['bubble_size'] = df_nodes['norm_size'].apply(lambda x: get_bubble_size(x, max_size, default_size))
-    else:
-        df_nodes['norm_size'] = normalize_categorical(df_nodes[dims[0]])
-        df_nodes['bubble_size'] = df_nodes['norm_size'].apply(lambda x: get_bubble_size(x, max_size, default_size))
-    df_nodes[dims[1]] = df_nodes['data'].apply(lambda x: x[dims[1]])
-    df_nodes['color'] = df_nodes[dims[1]].astype('category').cat.codes.apply(lambda x: mck_palette[x%11])
     df_nodes = df_nodes.merge(df_pos, left_on='n', right_on='index')
     # df_nodes = df_nodes.merge(tb.fillna(0), how='left', left_on='n', right_on='fmno')
     node_trace['x'] = df_nodes['x'].to_list()
     node_trace['y'] = df_nodes['y'].to_list()
     node_trace['text'] = df_nodes['n'].to_list()
-    node_trace['marker']['color'] = df_nodes['color'].to_list()
-    node_trace['marker']['size'] = df_nodes['bubble_size'].to_list()
+    if dims:
+        if len(dims) >=1:
+            df_nodes[dims[0]] = df_nodes['data'].apply(lambda x: x[dims[0]])
+            if np.issubdtype(df_nodes[dims[0]].dtype, np.number):  # is numeric
+                df_nodes['norm_size'] = normalize(df_nodes[dims[0]])
+                df_nodes['bubble_size'] = df_nodes['norm_size'].apply(lambda x: get_bubble_size(x, max_size, default_size))
+            else:
+                df_nodes['norm_size'] = normalize_categorical(df_nodes[dims[0]])
+                df_nodes['bubble_size'] = df_nodes['norm_size'].apply(lambda x: get_bubble_size(x, max_size, default_size))
+            node_trace['marker']['size'] = df_nodes['bubble_size'].to_list()
+
+        if len(dims) >=2:
+            df_nodes[dims[1]] = df_nodes['data'].apply(lambda x: x[dims[1]])
+            if np.issubdtype(df_nodes[dims[1]].dtype, np.number):  # is numeric
+                df_nodes['color'] = normalize(df_nodes[dims[1]])
+                # df_nodes['color'] = df_nodes[dims[1]]
+            else:
+                df_nodes['color'] = df_nodes[dims[1]].astype('category').cat.codes.apply(lambda x: mck_palette[x % 11])
+            node_trace['marker']['color'] = df_nodes['color'].to_list()
 
     # images = df_nodes[df_nodes.is_instance == 'movie'].apply(lambda x: create_image_layout(x.img_url, x.x, x.y, x.bubble_size), axis=1).to_list()
     if node:
@@ -148,16 +163,20 @@ def get_figure(edge_trace, node_trace):
     fig = go.Figure(data=[edge_trace, node_trace],
                     layout=go.Layout(
                         # title=f'<br>{target} {practice_function}',
-                        paper_bgcolor='black',
-                        plot_bgcolor='black',
+                        paper_bgcolor='rgb(5, 28, 44)',  # mck dark blue
+                        plot_bgcolor='rgba(0,0,0,0)',
                         titlefont=dict(size=16),
                         showlegend=False,
                         hovermode='closest',
+                        transition ={
+                            'duration': 500,
+                            'easing': 'cubic-in-out'
+                        },
                         margin=dict(b=20, l=5, r=5, t=40),
                         xaxis=dict(showgrid=False, zeroline=False, showticklabels=True),
                         yaxis=dict(showgrid=False, zeroline=False, showticklabels=True)))
     return fig
 
 
-# plot_G(H, 'Texas Chainsaw 3D (2013)')
-# plot_G(G, dims)
+# plot_G(H, dims = ['imdb', 'is_instance'])
+# plot_G(H, dims=['imdb', 'is_instance', 'is_instance', 'imdb'], node='Survival')

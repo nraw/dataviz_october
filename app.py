@@ -15,7 +15,7 @@ from src.graph import get_graph
 from src.visualize_graph import plot_G
 from src.markdown_info import get_markdown_info
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', "https://codepen.io/chriddyp/pen/brPBPO.css"]  # dash and loading spinner css
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']  #, "https://codepen.io/chriddyp/pen/brPBPO.css"]  # dash and loading spinner css
 
 # mck_palette = ['#034B6F', '#027AB1', '#39BDF3', '#71D2F1', '#AFC3FF', '#3C96B4', '#AAE6F0',
 #                '#8C5AC8', '#E6A0C8', '#E5546C', '#FAA082']
